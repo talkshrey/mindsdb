@@ -5,3 +5,4 @@ mindsdb_sql >= 0.4.0
 hyperopt
 dill
 dask
+protobuf>=3.20.2 # not directly required, pinned by Snyk to avoid a vulnerability
