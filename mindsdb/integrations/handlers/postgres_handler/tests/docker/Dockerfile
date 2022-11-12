@@ -1,4 +1,4 @@
-FROM postgres
+FROM postgres:15.1
 
 ENV POSTGRES_DB test
 
