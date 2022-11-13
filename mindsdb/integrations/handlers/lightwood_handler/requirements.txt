@@ -1,3 +1,5 @@
 lightwood[all_extras] >= 22.8.1.0
 mindsdb_sql >= 0.4.0
 mindsdb >= 22.7.5.0
+mxnet>=1.9.1 # not directly required, pinned by Snyk to avoid a vulnerability
+transformers>=4.23.0 # not directly required, pinned by Snyk to avoid a vulnerability
