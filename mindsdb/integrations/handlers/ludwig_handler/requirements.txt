@@ -5,3 +5,5 @@ mindsdb_sql >= 0.4.0
 hyperopt
 dill
 dask
+transformers>=4.23.0 # not directly required, pinned by Snyk to avoid a vulnerability
+wheel>=0.38.0 # not directly required, pinned by Snyk to avoid a vulnerability
