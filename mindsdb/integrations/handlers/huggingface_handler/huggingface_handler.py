@@ -1,5 +1,9 @@
+from typing import Optional
+
 import pandas as pd
 import transformers
+from huggingface_hub import HfApi
+
 from mindsdb.utilities import log
 
 from mindsdb.integrations.libs.base import BaseMLEngine
@@ -10,21 +14,69 @@ class HuggingFaceHandler(BaseMLEngine):
 
     @staticmethod
     def create_validation(target, args=None, **kwargs):
+
         if 'using' in args:
             args = args['using']
+
+        hf_api = HfApi()
+
+        # check model is pytorch based
+        metadata = hf_api.model_info(args['model_name'])
+        if 'pytorch' not in metadata.tags:
+            raise Exception('Currently only PyTorch models are supported (https://huggingface.co/models?library=pytorch&sort=downloads). To request another library, please contact us on our community slack (https://mindsdbcommunity.slack.com/join/shared_invite/zt-1e2cxo4ts-dUuoryp8n2hhyymPlzjD0A#/shared-invite/email).')
+
+        # check model task
+        supported_tasks = ['text-classification',
+                           'zero-shot-classification',
+                           'translation',
+                           'summarization']
+
+        if metadata.pipeline_tag not in supported_tasks:
+            raise Exception(f'Not supported task for model: {metadata.pipeline_tag}.\
+             Should be one of {", ".join(supported_tasks)}')
+
+        if 'task' not in args:
+            args['task'] = metadata.pipeline_tag
+        elif args['task'] != metadata.pipeline_tag:
+            raise Exception(f'Task mismatch for model: {args["task"]}!={metadata.pipeline_tag}')
+
+        input_keys = list(args.keys())
 
         # task, model_name, input_column is essential
         for key in ['task', 'model_name', 'input_column']:
             if key not in args:
                 raise Exception(f'Parameter "{key}" is required')
+            input_keys.remove(key)
 
-        if args['task'] == 'zero-shot-classification' and not 'candidate_labels' in args:
-            raise Exception('"candidate_labels" is required for zero-shot-classification')
+        # check tasks input
+
+        if args['task'] == 'zero-shot-classification':
+            key = 'candidate_labels'
+            if key not in args:
+                raise Exception('"candidate_labels" is required for zero-shot-classification')
+            input_keys.remove(key)
 
         if args['task'] == 'translation':
-            if 'lang_input' not in args or 'lang_output' not in args:
-                raise Exception('"lang_input" and "lang_output" is required for translation')
+            keys = ['lang_input', 'lang_output']
+            for key in keys:
+                if key not in args:
+                    raise Exception(f'{key} is required for translation')
+                input_keys.remove(key)
 
+        if args['task'] == 'summarization':
+            keys = ['min_output_length', 'max_output_length']
+            for key in keys:
+                if key not in args:
+                    raise Exception(f'{key} is required for translation')
+                input_keys.remove(key)
+
+        # optional keys
+        for key in ['labels', 'max_length']:
+            if key in input_keys:
+                input_keys.remove(key)
+
+        if len(input_keys) > 0:
+            raise Exception(f'Not expected parameters: {", ".join(input_keys)}')
 
     def create(self, target, args=None, **kwargs):
         # TODO change BaseMLEngine api?
@@ -52,12 +104,15 @@ class HuggingFaceHandler(BaseMLEngine):
         ####
         # Otherwise download it
         except OSError:
-            log.logger.debug(f"Downloading {model_name}...")
-            pipeline = transformers.pipeline(task=args['task_proper'], model=model_name)
+            try:
+                log.logger.debug(f"Downloading {model_name}...")
+                pipeline = transformers.pipeline(task=args['task_proper'], model=model_name)
 
-            pipeline.save_pretrained(hf_model_storage_path)
+                pipeline.save_pretrained(hf_model_storage_path)
 
-            log.logger.debug(f"Saved to {hf_model_storage_path}")
+                log.logger.debug(f"Saved to {hf_model_storage_path}")
+            except Exception:
+                raise Exception("Error while downloading and setting up the model. Please try a different model. We're working on expanding the list of supported models, so we would appreciate it if you let us know about this in our community slack (https://mindsdb.com/joincommunity).")  # noqa
         ####
 
         if 'max_length' in args:
@@ -161,3 +216,12 @@ class HuggingFaceHandler(BaseMLEngine):
         pred_df = pd.DataFrame(output_list_tidy)
 
         return pred_df
+
+    def describe(self, attribute: Optional[str] = None) -> pd.DataFrame:
+
+        args = self.model_storage.json_get('args')
+
+        hf_api = HfApi()
+        metadata = hf_api.model_info(args['model_name'])
+
+        return pd.DataFrame([[args, metadata.__dict__]], columns=['model_args', 'metadata'])
