@@ -32,3 +32,4 @@ pyOpenSSL >= 22.0.0
 pydateinfer==0.3.0
 pyarrow >= 9.0.0, < 10.0.0
 dataprep_ml
+nltk>=3.8.1 # not directly required, pinned by Snyk to avoid a vulnerability
