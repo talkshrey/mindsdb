@@ -1,2 +1,2 @@
 mlflow
-mindsdb>=22.10.2.1
+mindsdb>=23.11.4.0
