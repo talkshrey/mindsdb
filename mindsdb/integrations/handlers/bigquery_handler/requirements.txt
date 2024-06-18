@@ -1,3 +1,4 @@
 google-cloud-bigquery
 db-dtypes
 sqlalchemy-bigquery
+urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
