@@ -1,3 +1,4 @@
 google-cloud-bigquery
 db-dtypes
 sqlalchemy-bigquery
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
