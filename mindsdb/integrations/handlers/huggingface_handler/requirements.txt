@@ -6,3 +6,4 @@ transformers==4.21.0
 torch
 tensorflow
 tqdm
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
