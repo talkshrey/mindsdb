@@ -1,5 +1,5 @@
 # Dockerfile
-FROM python:3.7
+FROM python:latest
 
 RUN apt-get update && apt-get upgrade -y
 RUN pip3 install --upgrade pip
